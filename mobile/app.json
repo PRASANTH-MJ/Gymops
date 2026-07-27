@@ -1,0 +1,18 @@
+{
+  "expo": {
+    "name": "GymFlow",
+    "slug": "gymflow-mobile",
+    "scheme": "gymflow",
+    "version": "0.1.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "automatic",
+    "plugins": ["expo-router"],
+    "ios": {
+      "supportsTablet": false,
+      "bundleIdentifier": "cloud.aica.gymflow"
+    },
+    "android": {
+      "package": "cloud.aica.gymflow"
+    }
+  }
+}
