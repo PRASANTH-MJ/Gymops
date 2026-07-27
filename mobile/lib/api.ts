@@ -33,6 +33,11 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
 }
 
 export const api = {
+  getMe: () =>
+    request<{ id: string; name: string; role: string; email: string | null; phone: string | null; outlet_name: string | null }>(
+      "/api/auth/me"
+    ),
+
   login: (email: string, password: string) =>
     request<{ token: string; staff: { id: string; name: string; role: string; outlet_id: string } }>(
       "/api/auth/login",

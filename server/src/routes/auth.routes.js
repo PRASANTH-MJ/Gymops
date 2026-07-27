@@ -3,8 +3,20 @@ import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import { db } from "../db/index.js";
 import { newId } from "../utils/ids.js";
+import { requireAuth } from "../middleware/auth.js";
 
 export const authRouter = Router();
+
+// Whoever req.user resolves to — a real token, or (since login is
+// disabled for now) the fallback first-staff-in-the-outlet. Lets the
+// mobile Profile screen show something real instead of static placeholder text.
+authRouter.get("/me", requireAuth, (req, res) => {
+  const staff = db
+    .prepare("SELECT id, name, role, email, phone, outlet_id FROM users_staff WHERE id = ?")
+    .get(req.user.staffId);
+  const outlet = db.prepare("SELECT name FROM outlets WHERE id = ?").get(req.user.outletId);
+  res.json({ ...staff, outlet_name: outlet?.name ?? null });
+});
 
 function signToken(staff) {
   return jwt.sign(
