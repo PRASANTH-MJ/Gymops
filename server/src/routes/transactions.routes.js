@@ -2,6 +2,7 @@ import { Router } from "express";
 import { db } from "../db/index.js";
 import { requireAuth } from "../middleware/auth.js";
 import { newId } from "../utils/ids.js";
+import { buildInvoiceData } from "../services/invoice.js";
 
 export const transactionsRouter = Router();
 transactionsRouter.use(requireAuth);
@@ -99,36 +100,10 @@ transactionsRouter.post("/", (req, res) => {
 
 // GET /api/transactions/:id/invoice — structured data for the invoice PDF
 // (member/plan/payment breakdown + terms), matching the reference invoice.
+// Outlet-scoped, for internal (authenticated staff) use. The public,
+// shareable-link version lives at GET /api/public/invoices/:id.
 transactionsRouter.get("/:id/invoice", (req, res) => {
-  const txn = db
-    .prepare("SELECT * FROM transactions WHERE id = ? AND outlet_id = ?")
-    .get(req.params.id, req.user.outletId);
-  if (!txn) return res.status(404).json({ error: "Transaction not found" });
-
-  const member = db.prepare("SELECT * FROM members WHERE id = ?").get(txn.member_id);
-  const outlet = db.prepare("SELECT * FROM outlets WHERE id = ?").get(req.user.outletId);
-  const plan = member?.plan_id ? db.prepare("SELECT * FROM plans WHERE id = ?").get(member.plan_id) : null;
-
-  res.json({
-    outlet: { name: outlet.name, location: outlet.location },
-    member: { name: member?.full_name, code: member?.member_code },
-    plan: plan ? { name: plan.plan_name, duration_days: plan.duration_days } : null,
-    start_date: member?.start_date,
-    end_date: member?.expiry_date,
-    amount_paid: txn.amount_collected,
-    admission_amount: txn.admission_amount,
-    discount_amount: txn.discount_amount,
-    pending_due: txn.amount_due,
-    paid_at: txn.paid_at,
-    terms: [
-      "Membership fees are non-refundable and non-transferable.",
-      "All payments must be made in advance before the membership period begins.",
-      "Members must follow all gym rules and regulations at all times.",
-      "The gym is not responsible for any personal belongings lost or stolen on the premises.",
-      "Members must present their membership card or ID for gym access.",
-      "Membership can be suspended or terminated for violation of gym policies.",
-      "All disputes are subject to local jurisdiction only.",
-      "Terms and conditions are subject to change without prior notice.",
-    ],
-  });
+  const invoice = buildInvoiceData(req.params.id, { outletId: req.user.outletId });
+  if (!invoice) return res.status(404).json({ error: "Transaction not found" });
+  res.json(invoice);
 });

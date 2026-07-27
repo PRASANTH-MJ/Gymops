@@ -1,15 +1,45 @@
-import Link from "next/link";
-import { MessageCircle, Eye, Calendar } from "lucide-react";
+import { MessageCircle, Eye, Wallet } from "lucide-react";
 import { Avatar } from "@/components/ui/Avatar";
 import { StatusBadge } from "@/components/ui/StatusBadge";
-import { cn, daysLeftLabel, formatCurrency, whatsappLink } from "@/lib/utils";
+import { DaysLeftBadge } from "@/components/ui/DaysLeftBadge";
+import { cn, formatCurrency } from "@/lib/utils";
 import type { MemberWithStatus } from "@/types/database";
 
-export function MemberCard({ member }: { member: MemberWithStatus }) {
+interface MemberCardProps {
+  member: MemberWithStatus;
+  selected: boolean;
+  onToggleSelect: (id: string) => void;
+  onViewProfile: (id: string) => void;
+  onCollectDue: (member: MemberWithStatus) => void;
+  onWhatsApp: (member: MemberWithStatus) => void;
+}
+
+export function MemberCard({
+  member,
+  selected,
+  onToggleSelect,
+  onViewProfile,
+  onCollectDue,
+  onWhatsApp,
+}: MemberCardProps) {
   return (
-    <div className="rounded-xl border border-border bg-card p-4 transition-shadow hover:shadow-md">
+    <div
+      className={cn(
+        "rounded-xl border bg-card p-4 transition-shadow hover:shadow-md cursor-pointer",
+        selected ? "border-primary" : "border-border"
+      )}
+      onClick={() => onViewProfile(member.id)}
+    >
       <div className="flex items-start justify-between">
         <div className="flex items-center gap-3">
+          <input
+            type="checkbox"
+            checked={selected}
+            onClick={(e) => e.stopPropagation()}
+            onChange={() => onToggleSelect(member.id)}
+            className="h-4 w-4 rounded border-border"
+            aria-label={`Select ${member.full_name}`}
+          />
           <Avatar name={member.full_name} size={44} />
           <div>
             <div className="font-semibold">{member.full_name}</div>
@@ -27,17 +57,8 @@ export function MemberCard({ member }: { member: MemberWithStatus }) {
           <span className="font-medium">{member.phone}</span>
         </div>
         <div className="flex items-center justify-between">
-          <span className="text-muted-foreground flex items-center gap-1">
-            <Calendar className="h-3.5 w-3.5" /> Expiry
-          </span>
-          <span
-            className={cn(
-              "font-medium",
-              member.days_left < 0 ? "text-destructive" : "text-foreground"
-            )}
-          >
-            {daysLeftLabel(member.days_left)}
-          </span>
+          <span className="text-muted-foreground">Expiry</span>
+          <DaysLeftBadge daysLeft={member.days_left} />
         </div>
         <div className="flex items-center justify-between">
           <span className="text-muted-foreground">Due</span>
@@ -52,24 +73,27 @@ export function MemberCard({ member }: { member: MemberWithStatus }) {
         </div>
       </div>
 
-      <div className="mt-4 flex gap-2 border-t border-border pt-3">
-        <a
-          href={whatsappLink(
-            member.phone,
-            `Hi ${member.full_name}, this is a reminder from your gym.`
-          )}
-          target="_blank"
-          rel="noreferrer"
+      <div className="mt-4 flex gap-2 border-t border-border pt-3" onClick={(e) => e.stopPropagation()}>
+        {member.due_amount > 0 && (
+          <button
+            onClick={() => onCollectDue(member)}
+            className="flex flex-1 items-center justify-center gap-1.5 rounded-lg bg-primary/10 py-1.5 text-xs font-semibold text-primary hover:bg-primary/20"
+          >
+            <Wallet className="h-3.5 w-3.5" /> Collect
+          </button>
+        )}
+        <button
+          onClick={() => onWhatsApp(member)}
           className="flex flex-1 items-center justify-center gap-1.5 rounded-lg bg-success/10 py-1.5 text-xs font-semibold text-success hover:bg-success/20"
         >
           <MessageCircle className="h-3.5 w-3.5" /> WhatsApp
-        </a>
-        <Link
-          href={`/members/${member.id}`}
+        </button>
+        <button
+          onClick={() => onViewProfile(member.id)}
           className="flex flex-1 items-center justify-center gap-1.5 rounded-lg bg-muted py-1.5 text-xs font-semibold hover:bg-muted/70"
         >
           <Eye className="h-3.5 w-3.5" /> View
-        </Link>
+        </button>
       </div>
     </div>
   );

@@ -56,6 +56,8 @@ export const api = {
     }),
 
   getOutlet: () => request("/api/outlets/me"),
+  updateOutlet: (payload: Record<string, unknown>) =>
+    request("/api/outlets/me", { method: "PATCH", body: JSON.stringify(payload) }),
 
   getMembers: (params: Record<string, string> = {}) => {
     const qs = new URLSearchParams(params).toString();
@@ -72,6 +74,9 @@ export const api = {
   getPlans: () => request("/api/plans"),
   createPlan: (payload: Record<string, unknown>) =>
     request("/api/plans", { method: "POST", body: JSON.stringify(payload) }),
+  updatePlan: (id: string, payload: Record<string, unknown>) =>
+    request(`/api/plans/${id}`, { method: "PATCH", body: JSON.stringify(payload) }),
+  deletePlan: (id: string) => request(`/api/plans/${id}`, { method: "DELETE" }),
 
   getExpenses: (params: Record<string, string> = {}) => {
     const qs = new URLSearchParams(params).toString();
@@ -86,6 +91,10 @@ export const api = {
   },
   createEnquiry: (payload: Record<string, unknown>) =>
     request("/api/enquiries", { method: "POST", body: JSON.stringify(payload) }),
+  updateEnquiry: (id: string, payload: Record<string, unknown>) =>
+    request(`/api/enquiries/${id}`, { method: "PATCH", body: JSON.stringify(payload) }),
+  convertEnquiry: (id: string) =>
+    request(`/api/enquiries/${id}/convert`, { method: "POST" }),
 
   getTransactions: (params: Record<string, string> = {}) => {
     const qs = new URLSearchParams(params).toString();
@@ -98,8 +107,10 @@ export const api = {
   createTransaction: (payload: Record<string, unknown>) =>
     request("/api/transactions", { method: "POST", body: JSON.stringify(payload) }),
   getInvoice: (transactionId: string) => request(`/api/transactions/${transactionId}/invoice`),
+  getPublicInvoice: (transactionId: string) => request(`/api/public/invoices/${transactionId}`),
 
   getAttendanceToday: () => request<{ count: number }>("/api/attendance/today"),
+  getAttendance: (memberId: string) => request(`/api/attendance?member_id=${memberId}`),
   checkIn: (memberId: string, source = "manual") =>
     request("/api/attendance", { method: "POST", body: JSON.stringify({ member_id: memberId, source }) }),
 
@@ -111,4 +122,11 @@ export const api = {
   getCurrentSubscription: () => request("/api/subscriptions/current"),
   purchaseSubscription: (tier: string) =>
     request("/api/subscriptions/purchase", { method: "POST", body: JSON.stringify({ tier }) }),
+
+  getStaff: () => request("/api/staff"),
+  createStaff: (payload: Record<string, unknown>) =>
+    request("/api/staff", { method: "POST", body: JSON.stringify(payload) }),
+  updateStaff: (id: string, payload: Record<string, unknown>) =>
+    request(`/api/staff/${id}`, { method: "PATCH", body: JSON.stringify(payload) }),
+  deleteStaff: (id: string) => request(`/api/staff/${id}`, { method: "DELETE" }),
 };

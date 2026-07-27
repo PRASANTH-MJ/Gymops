@@ -6,6 +6,21 @@ import { newId } from "../utils/ids.js";
 export const attendanceRouter = Router();
 attendanceRouter.use(requireAuth);
 
+// GET /api/attendance?member_id= — check-in history for the member drawer
+attendanceRouter.get("/", (req, res) => {
+  const { member_id: memberId, limit = 20 } = req.query;
+  if (!memberId) return res.status(400).json({ error: "member_id is required" });
+
+  res.json(
+    db
+      .prepare(
+        `SELECT * FROM attendance WHERE outlet_id = ? AND member_id = ?
+         ORDER BY checked_in_at DESC LIMIT ?`
+      )
+      .all(req.user.outletId, memberId, Number(limit))
+  );
+});
+
 // GET /api/attendance/today — powers the Dashboard "Attendance Today" tile
 attendanceRouter.get("/today", (req, res) => {
   const { count } = db

@@ -87,6 +87,56 @@ export interface ReminderTemplate {
   updated_at: string | null;
 }
 
+export interface Enquiry {
+  id: string;
+  outlet_id: string;
+  lead_name: string;
+  phone: string;
+  source: string | null;
+  status: EnquiryStatus;
+  follow_up_date: string | null;
+  assigned_to: string | null;
+  notes: string | null;
+  created_at: string;
+}
+
+export interface Expense {
+  id: string;
+  outlet_id: string;
+  category: string;
+  amount: number;
+  date: string;
+  notes: string | null;
+  created_at: string;
+}
+
+export interface StaffMember {
+  id: string;
+  outlet_id: string;
+  name: string;
+  role: StaffRole;
+  phone: string | null;
+  email: string | null;
+  is_active: number;
+  created_at: string;
+}
+
+export interface Invoice {
+  transaction_id: string;
+  outlet: { name: string; location: string | null };
+  member: { name: string; code: string };
+  plan: { name: string; duration_days: number } | null;
+  start_date: string;
+  end_date: string;
+  plan_amount: number;
+  admission_amount: number;
+  discount_amount: number;
+  amount_paid: number;
+  pending_due: number;
+  paid_at: string;
+  terms: string[];
+}
+
 export interface SaasSubscription {
   id: string;
   outlet_id: string;

@@ -10,6 +10,8 @@ import { transactionsRouter } from "./routes/transactions.routes.js";
 import { attendanceRouter } from "./routes/attendance.routes.js";
 import { reminderTemplatesRouter } from "./routes/reminderTemplates.routes.js";
 import { subscriptionsRouter } from "./routes/subscriptions.routes.js";
+import { staffRouter } from "./routes/staff.routes.js";
+import { publicInvoiceRouter } from "./routes/publicInvoice.routes.js";
 
 export const app = express();
 
@@ -28,6 +30,8 @@ app.use("/api/transactions", transactionsRouter);
 app.use("/api/attendance", attendanceRouter);
 app.use("/api/reminder-templates", reminderTemplatesRouter);
 app.use("/api/subscriptions", subscriptionsRouter);
+app.use("/api/staff", staffRouter);
+app.use("/api/public", publicInvoiceRouter);
 
 app.use((err, _req, res, _next) => {
   console.error(err);
