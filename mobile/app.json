@@ -24,6 +24,12 @@
         "projectId": "9255fed3-380d-43a7-8dea-132aef2e6beb"
       }
     },
-    "owner": "prasanthmj"
+    "owner": "prasanthmj",
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
+    "updates": {
+      "url": "https://u.expo.dev/9255fed3-380d-43a7-8dea-132aef2e6beb"
+    }
   }
 }
