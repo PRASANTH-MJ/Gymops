@@ -6,13 +6,24 @@
     "version": "0.1.0",
     "orientation": "portrait",
     "userInterfaceStyle": "automatic",
-    "plugins": ["expo-router"],
+    "plugins": [
+      "expo-router"
+    ],
     "ios": {
       "supportsTablet": false,
       "bundleIdentifier": "cloud.aica.gymflow"
     },
     "android": {
       "package": "cloud.aica.gymflow"
-    }
+    },
+    "extra": {
+      "router": {
+        "origin": false
+      },
+      "eas": {
+        "projectId": "9255fed3-380d-43a7-8dea-132aef2e6beb"
+      }
+    },
+    "owner": "prasanthmj"
   }
 }
