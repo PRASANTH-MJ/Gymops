@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { Suspense, useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { MemberActionBar } from "@/components/members/MemberActionBar";
 import { MemberFilters, type MemberFilterState } from "@/components/members/MemberFilters";
@@ -36,6 +36,14 @@ const PRESETS: Array<{ key: Exclude<Preset, null>; label: string }> = [
 ];
 
 export default function MembersPage() {
+  return (
+    <Suspense fallback={null}>
+      <MembersPageContent />
+    </Suspense>
+  );
+}
+
+function MembersPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [view, setView] = useState<"table" | "grid">("table");

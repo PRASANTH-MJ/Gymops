@@ -1,8 +1,7 @@
 import { View, Text, Pressable } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { router } from "expo-router";
-import { ChevronRight, MessageSquare, LogOut } from "lucide-react-native";
-import { clearToken } from "@/lib/api";
+import { ChevronRight, MessageSquare } from "lucide-react-native";
 
 const MENU_ITEMS = [
   { label: "Update Profile", onPress: () => {} },
@@ -17,11 +16,6 @@ const MENU_ITEMS = [
 ];
 
 export default function ProfileScreen() {
-  async function handleLogout() {
-    await clearToken();
-    router.replace("/login");
-  }
-
   return (
     <SafeAreaView className="flex-1 bg-white px-4 pt-4">
       <Text className="text-2xl font-bold text-black">Profile</Text>
@@ -42,14 +36,6 @@ export default function ProfileScreen() {
           </Pressable>
         ))}
       </View>
-
-      <Pressable
-        onPress={handleLogout}
-        className="mt-6 flex-row items-center justify-center gap-2 rounded-xl bg-destructive/10 py-3"
-      >
-        <LogOut size={16} color="#E5484D" />
-        <Text className="font-semibold text-destructive">Logout</Text>
-      </Pressable>
     </SafeAreaView>
   );
 }

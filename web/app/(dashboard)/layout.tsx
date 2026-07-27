@@ -1,6 +1,5 @@
 import { Sidebar } from "@/components/layout/Sidebar";
 import { Header } from "@/components/layout/Header";
-import { RequireAuth } from "@/components/auth/RequireAuth";
 import { QuickActionFAB } from "@/components/layout/QuickActionFAB";
 
 export default function DashboardLayout({
@@ -9,7 +8,7 @@ export default function DashboardLayout({
   children: React.ReactNode;
 }) {
   return (
-    <RequireAuth>
+    <>
       <div className="flex h-screen overflow-hidden bg-background">
         <Sidebar />
         <div className="flex flex-1 flex-col overflow-hidden">
@@ -18,6 +17,6 @@ export default function DashboardLayout({
         </div>
       </div>
       <QuickActionFAB />
-    </RequireAuth>
+    </>
   );
 }
