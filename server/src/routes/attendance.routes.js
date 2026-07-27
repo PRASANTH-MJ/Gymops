@@ -38,7 +38,7 @@ attendanceRouter.get("/today/list", (req, res) => {
   res.json(
     db
       .prepare(
-        `SELECT a.id, a.checked_in_at, a.source, m.full_name AS member_name, m.member_code
+        `SELECT a.id, a.member_id, a.checked_in_at, a.source, m.full_name AS member_name, m.member_code
          FROM attendance a
          JOIN members m ON m.id = a.member_id
          WHERE a.outlet_id = ? AND date(a.checked_in_at) = date('now')

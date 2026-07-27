@@ -1,15 +1,13 @@
 import { useState } from "react";
 import { View, Text, Pressable } from "react-native";
 import { Plus, ScanLine, Receipt, X } from "lucide-react-native";
+import { QuickCheckInModal } from "./QuickCheckInModal";
+import { QuickPaymentEntryModal } from "./QuickPaymentEntryModal";
 
-export function QuickActionFAB({
-  onCheckIn,
-  onPaymentEntry,
-}: {
-  onCheckIn: () => void;
-  onPaymentEntry: () => void;
-}) {
+export function QuickActionFAB() {
   const [open, setOpen] = useState(false);
+  const [checkInOpen, setCheckInOpen] = useState(false);
+  const [paymentOpen, setPaymentOpen] = useState(false);
 
   return (
     <View className="absolute bottom-6 right-5 items-end">
@@ -18,7 +16,7 @@ export function QuickActionFAB({
           <Pressable
             onPress={() => {
               setOpen(false);
-              onPaymentEntry();
+              setPaymentOpen(true);
             }}
             className="flex-row items-center gap-2 rounded-full bg-white px-4 py-3 shadow-md"
           >
@@ -28,7 +26,7 @@ export function QuickActionFAB({
           <Pressable
             onPress={() => {
               setOpen(false);
-              onCheckIn();
+              setCheckInOpen(true);
             }}
             className="flex-row items-center gap-2 rounded-full bg-white px-4 py-3 shadow-md"
           >
@@ -44,6 +42,9 @@ export function QuickActionFAB({
       >
         {open ? <X size={24} color="#fff" /> : <Plus size={24} color="#fff" />}
       </Pressable>
+
+      <QuickCheckInModal visible={checkInOpen} onClose={() => setCheckInOpen(false)} />
+      <QuickPaymentEntryModal visible={paymentOpen} onClose={() => setPaymentOpen(false)} />
     </View>
   );
 }

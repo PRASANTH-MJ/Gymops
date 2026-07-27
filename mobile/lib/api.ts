@@ -7,6 +7,10 @@ export const getToken = () => AsyncStorage.getItem(TOKEN_KEY);
 export const setToken = (token: string) => AsyncStorage.setItem(TOKEN_KEY, token);
 export const clearToken = () => AsyncStorage.removeItem(TOKEN_KEY);
 
+export async function apiRequest<T>(path: string, options: RequestInit = {}): Promise<T> {
+  return request<T>(path, options);
+}
+
 async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
   const token = await getToken();
 
@@ -39,6 +43,7 @@ export const api = {
     const qs = new URLSearchParams(params).toString();
     return request(`/api/members${qs ? `?${qs}` : ""}`);
   },
+  getPlans: () => request("/api/plans"),
 
   getTransactions: (params: Record<string, string> = {}) => {
     const qs = new URLSearchParams(params).toString();
@@ -52,6 +57,7 @@ export const api = {
     request("/api/transactions", { method: "POST", body: JSON.stringify(payload) }),
 
   getAttendanceToday: () => request<{ count: number }>("/api/attendance/today"),
+  getAttendanceTodayList: () => request("/api/attendance/today/list"),
   checkIn: (memberId: string) =>
     request("/api/attendance", { method: "POST", body: JSON.stringify({ member_id: memberId, source: "manual" }) }),
 

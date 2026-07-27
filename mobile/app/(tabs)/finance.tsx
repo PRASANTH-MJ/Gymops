@@ -1,98 +1,89 @@
-import { useCallback, useEffect, useState } from "react";
+import { useMemo, useState } from "react";
 import { View, Text, ScrollView, Pressable, RefreshControl } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { api } from "@/lib/api";
 import { TransactionAmount } from "@/components/TransactionAmount";
-
-interface Summary {
-  income: number;
-  discount: number;
-  expense: number;
-  profit: number;
-  online_income: number;
-  cash_income: number;
-  admission_count: number;
-  renewal_count: number;
-  due_paid_count: number;
-  pt_count: number;
-  service_count: number;
-  product_count: number;
-}
-
-interface TxnRow {
-  id: string;
-  member_name?: string;
-  type: string;
-  method: string;
-  amount_collected: number;
-  paid_at: string;
-}
+import { SyncStatusBadge } from "@/components/SyncStatusBadge";
+import { useLocalTable } from "@/hooks/useLocalTable";
+import { useSync } from "@/hooks/useSync";
+import type { TransactionRow } from "@/sync/syncEngine";
 
 export default function FinanceScreen() {
-  const [summary, setSummary] = useState<Summary | null>(null);
-  const [transactions, setTransactions] = useState<TxnRow[]>([]);
   const [tab, setTab] = useState<"income" | "expense">("income");
-  const [refreshing, setRefreshing] = useState(false);
+  const { rows: allTransactions, refresh } = useLocalTable<TransactionRow>("transactions");
+  const { status, triggerSync } = useSync();
 
   const monthStart = new Date();
   monthStart.setDate(1);
   const from = monthStart.toISOString().slice(0, 10);
   const to = new Date().toISOString().slice(0, 10);
 
-  const load = useCallback(async () => {
-    const [summaryData, txnData] = await Promise.all([
-      api.getTransactionSummary({ from, to }),
-      api.getTransactions({ from, to }),
-    ]);
-    setSummary(summaryData as Summary);
-    setTransactions(txnData as TxnRow[]);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  const transactions = useMemo(
+    () => allTransactions.filter((t) => t.paid_at.slice(0, 10) >= from && t.paid_at.slice(0, 10) <= to),
+    [allTransactions, from, to]
+  );
 
-  useEffect(() => {
-    load();
-  }, [load]);
+  const summary = useMemo(() => {
+    const income = transactions.reduce((s, t) => s + t.amount_collected, 0);
+    const discount = transactions.reduce((s, t) => s + t.discount_amount, 0);
+    const online = transactions.filter((t) => t.method === "online").reduce((s, t) => s + t.amount_collected, 0);
+    const cash = transactions.filter((t) => t.method === "cash").reduce((s, t) => s + t.amount_collected, 0);
+    const countByType = (type: string) => transactions.filter((t) => t.type === type).length;
+    return {
+      income,
+      discount,
+      profit: income, // no local expense cache yet — profit ≈ income until expenses sync locally
+      onlineIncome: online,
+      cashIncome: cash,
+      admissionCount: countByType("admission"),
+      renewalCount: countByType("renewal"),
+      duePaidCount: countByType("due_paid"),
+      ptCount: countByType("pt"),
+      serviceCount: countByType("service"),
+      productCount: countByType("product"),
+    };
+  }, [transactions]);
 
   async function onRefresh() {
-    setRefreshing(true);
-    await load();
-    setRefreshing(false);
+    await triggerSync();
+    refresh();
   }
 
-  const tiles = summary
-    ? [
-        { label: "Admission", value: summary.admission_count },
-        { label: "Renewal", value: summary.renewal_count },
-        { label: "Due Paid", value: summary.due_paid_count },
-        { label: "PT", value: summary.pt_count },
-        { label: "Service", value: summary.service_count },
-        { label: "Product", value: summary.product_count },
-      ]
-    : [];
+  const tiles = [
+    { label: "Admission", value: summary.admissionCount },
+    { label: "Renewal", value: summary.renewalCount },
+    { label: "Due Paid", value: summary.duePaidCount },
+    { label: "PT", value: summary.ptCount },
+    { label: "Service", value: summary.serviceCount },
+    { label: "Product", value: summary.productCount },
+  ];
 
   return (
     <SafeAreaView className="flex-1 bg-white px-4 pt-4">
-      <Text className="text-center text-2xl font-bold text-black">Finance</Text>
+      <View className="flex-row items-center justify-between">
+        <View style={{ width: 60 }} />
+        <Text className="text-center text-2xl font-bold text-black">Finance</Text>
+        <SyncStatusBadge />
+      </View>
       <Text className="mt-1 text-center text-xs text-gray-400">
         {from} — {to}
       </Text>
 
       <View className="mt-4 rounded-2xl bg-primary p-4">
         <View className="flex-row items-center justify-between">
-          <Text className="text-xs text-white/80">Profit</Text>
+          <Text className="text-xs text-white/80">Income</Text>
           <Text className="rounded-full bg-white/20 px-2 py-1 text-xs text-white">
-            Discount ₹{summary?.discount ?? 0}
+            Discount ₹{summary.discount}
           </Text>
         </View>
-        <Text className="mt-1 text-3xl font-bold text-white">₹{summary?.profit ?? 0}</Text>
+        <Text className="mt-1 text-3xl font-bold text-white">₹{summary.income}</Text>
         <View className="mt-3 flex-row gap-4 border-t border-white/20 pt-3">
-          <Text className="text-xs text-white/90">Income ₹{summary?.income ?? 0}</Text>
-          <Text className="text-xs text-white/90">Expense ₹{summary?.expense ?? 0}</Text>
+          <Text className="text-xs text-white/90">Online ₹{summary.onlineIncome}</Text>
+          <Text className="text-xs text-white/90">Cash ₹{summary.cashIncome}</Text>
         </View>
       </View>
 
       <ScrollView
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
+        refreshControl={<RefreshControl refreshing={status === "syncing"} onRefresh={onRefresh} />}
         contentContainerStyle={{ paddingBottom: 100 }}
       >
         <View className="mt-4 flex-row flex-wrap gap-2">
@@ -129,7 +120,10 @@ export default function FinanceScreen() {
                   className="mb-2 flex-row items-center justify-between rounded-xl border border-gray-100 bg-muted p-3"
                 >
                   <View>
-                    <Text className="font-semibold text-black">{t.member_name ?? "Walk-in"}</Text>
+                    <Text className="font-semibold text-black">
+                      {t.member_name ?? "Walk-in"}
+                      {t.is_pending ? " (pending sync)" : ""}
+                    </Text>
                     <Text className="text-xs capitalize text-gray-500">
                       {t.type.replace("_", " ")} · {t.method}
                     </Text>
@@ -139,7 +133,9 @@ export default function FinanceScreen() {
               ))
             ))}
           {tab === "expense" && (
-            <Text className="mt-6 text-center text-sm text-gray-400">No record found.</Text>
+            <Text className="mt-6 text-center text-sm text-gray-400">
+              Expenses aren&apos;t cached locally yet — view them on the web dashboard.
+            </Text>
           )}
         </View>
       </ScrollView>
