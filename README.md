@@ -20,14 +20,17 @@ gymflow-saas/
 ├── web/                     # Next.js 14 App Router admin dashboard
 │   ├── app/(dashboard)/     # sidebar layout: dashboard, members, plans,
 │   │                        # expenses, enquiries, staffs, outlets, finance
-│   ├── app/login/
 │   ├── app/invoice/[id]/    # public invoice viewer (no login required)
-│   ├── components/          # layout/, members/, auth/, ui/
+│   ├── components/          # layout/, members/, ui/
 │   └── lib/                 # api.ts (fetch client), reminders.ts, utils
-├── mobile/                  # Expo Router mobile app
+├── mobile/                  # Expo Router mobile app — offline-first
 │   ├── app/(tabs)/          # Dashboard, Members, Enquiries, Finance, Profile
-│   ├── app/login.tsx
-│   └── app/reminder-templates/
+│   ├── app/reminder-templates/
+│   ├── db/                  # schema.ts (versioned migrations), client.ts
+│   ├── hooks/                # useLocalTable, useSync
+│   ├── sync/                 # syncEngine.ts (push queue, pull), localId.ts
+│   └── components/          # SyncStatusBadge, LocalMemberPicker,
+│                              # QuickCheckInModal, QuickPaymentEntryModal
 └── docs/
     └── API_SPECS.md         # REST endpoint reference
 ```
@@ -57,7 +60,7 @@ Seed login: `iprasanth282002@gmail.com` / `demo1234`
 cd web
 cp .env.example .env.local   # NEXT_PUBLIC_API_URL=http://127.0.0.1:4000
 npm install
-npm run dev                  # open http://127.0.0.1:3000 → /login → /dashboard
+npm run dev                  # open http://127.0.0.1:3000 → straight to /dashboard, no login
 ```
 
 **Mobile**
@@ -66,6 +69,8 @@ cd mobile
 npm install
 EXPO_PUBLIC_API_URL=http://127.0.0.1:4000 npx expo start
 ```
+No login here either — the app pulls data into a local SQLite cache on first
+launch and works offline after that (see "Mobile: offline-first" below).
 
 ## Deployment
 
@@ -104,10 +109,13 @@ Postgres and adjust `server/src/db/` accordingly (not done in this build).
   `reminder_templates`, `saas_subscriptions`. A shared `services/invoice.js`
   builder backs both the authenticated invoice endpoint and a public,
   unauthenticated one for shareable WhatsApp links.
-- **Web**: login page, JWT-guarded dashboard shell (outlet switcher, dark
-  mode, currency, language, profile, live SaaS-subscription tracker). Every
-  sidebar page is built: Dashboard (live KPIs), Members, Plans, Expenses,
-  Enquiries, Staffs, Outlets (single-outlet settings), Finance.
+- **Web**: no login (see below) — goes straight to a dashboard shell (outlet
+  switcher, dark mode, currency, language, live SaaS-subscription tracker
+  with a real renewal modal). Every sidebar page is built: Dashboard (live
+  KPIs, revenue trend chart, member status breakdown, attendance detail
+  widget), Members, Plans, Expenses, Enquiries, Staffs, Outlets
+  (single-outlet settings), Finance. A global Quick Action FAB (Add Member,
+  Collect Payment, Mark Attendance, New Enquiry) is reachable from every page.
   The Members page includes: a KPI summary bar (active/expiring/expired/dues),
   table + grid views, row/bulk selection with a floating bulk-action bar
   (WhatsApp broadcast, CSV export, bulk status update), a slide-over Quick
@@ -117,12 +125,20 @@ Postgres and adjust `server/src/db/` accordingly (not done in this build).
   picklist (Expiry / Due / **Send Invoice**, which builds a real invoice
   page at `/invoice/[transactionId]` and a WhatsApp message matching the
   reference app's format).
-- **Mobile**: Expo Router bottom-tab shell wired to the same API — Dashboard
-  (today's income/online/cash split, admission/renewal/due-paid/attendance
-  tiles, recent transactions), Members (live search), Finance (profit card,
-  category tiles, income/expense tabs), and an editable Reminder Templates
-  flow reached from Profile. Quick Check-in / Payment Entry FAB is present
-  but not yet wired to the `attendance` / `transactions` endpoints.
+- **Mobile: offline-first.** Expo Router bottom-tab app that mirrors
+  members/plans/transactions/(today's) attendance into a local `expo-sqlite`
+  database (`db/schema.ts` — versioned migrations, `PRAGMA user_version`
+  tracked) and reads/writes against that cache, not the network, on
+  Dashboard/Members/Finance. Writes made offline (Quick Check-in, Payment
+  Entry — both real flows now, with a local member search picker) insert an
+  optimistic local row and queue the equivalent API call in a `sync_queue`
+  table. `sync/syncEngine.ts` pushes that queue then pulls fresh data
+  whenever the network reconnects or the app foregrounds (`useSync`); a
+  `SyncStatusBadge` shows "Synced Xm ago" / "Offline" / a pending-write
+  count. Enquiries and Reminder Templates are **not** cached locally —
+  those screens still need connectivity (documented limitation, not
+  silently broken). The web app and API server are unchanged and remain
+  the shared source of truth every device eventually syncs against.
 - Reference screenshots of the target GymOps app (pricing tiers, invoice
   layout, Add Member wizard, dashboard/finance/manager screens, WhatsApp
   reminder picklist, WhatsApp invoice message) directly informed the schema
@@ -132,11 +148,17 @@ Postgres and adjust `server/src/db/` accordingly (not done in this build).
 
 1. Wire the Add Member modal's date pickers/optional fields (email, height,
    weight, address, DOB) to match the reference app's 3-step wizard.
-2. Wire mobile Quick Check-in → `POST /api/attendance` and Payment Entry →
-   `POST /api/transactions`.
-3. Real PDF export for invoices (currently browser print-to-PDF via
+2. Real PDF export for invoices (currently browser print-to-PDF via
    `window.print()`, no PDF library).
-4. WhatsApp Cloud API integration so reminders can send without opening a
+3. WhatsApp Cloud API integration so reminders can send without opening a
    `wa.me` tab per member (see docs/API_SPECS.md).
-5. Add outlet-switching against real multi-outlet `users_staff` membership
-   (currently a single outlet per login).
+4. Cache Enquiries and Expenses locally on mobile too, for full offline
+   parity with Finance/Members.
+5. Real conflict resolution for the sync queue — right now it's simple
+   replay-on-reconnect (server wins on pull, local queue wins on push in
+   whatever order it queued); two staff editing the same due amount offline
+   at the same time isn't reconciled.
+6. Auth was intentionally disabled for now (`server/src/middleware/auth.js`
+   falls back to the first outlet/staff when no token is present) — real
+   login + multi-outlet `users_staff` switching would need to come back
+   before this is safe for more than one gym/one trusted user.
