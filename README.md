@@ -67,6 +67,33 @@ npm install
 EXPO_PUBLIC_API_URL=http://127.0.0.1:4000 npx expo start
 ```
 
+## Deployment
+
+**Frontend (Netlify)** — `netlify.toml` at the repo root points Netlify at
+the `web/` subdirectory (this is a monorepo — without `base = "web"` Netlify
+builds from the repo root, finds no `next.config.mjs`, and 404s everything)
+and installs `@netlify/plugin-nextjs`, required for the App Router's dynamic
+routes (e.g. `/invoice/[id]`) to route correctly instead of 404ing. After
+connecting the repo, set `NEXT_PUBLIC_API_URL` in Netlify's site environment
+variables to your deployed API's URL (see below) — it's baked in at build
+time, so a redeploy is needed after changing it.
+
+**Backend (Render)** — `render.yaml` at the repo root is a Render Blueprint:
+rootDir `server`, `npm install` / `npm start`, with `JWT_SECRET`
+auto-generated. Connect the repo on Render as a Blueprint, then:
+1. Set `CORS_ORIGIN` to your actual Netlify URL (the placeholder in
+   `render.yaml` is `https://your-site.netlify.app` — replace it).
+2. Once deployed, run `npm run seed` once from Render's shell to create demo
+   data (don't run it on every deploy — it inserts, doesn't reset).
+3. Copy the Render service URL into Netlify's `NEXT_PUBLIC_API_URL` and
+   redeploy the frontend.
+
+**Caveat**: Render's **free** web service plan has no persistent disk — the
+SQLite file (`data/gymflow.db`) resets whenever the service restarts or
+redeploys (free instances also spin down after inactivity). Fine for a demo;
+for real data, either add a paid disk in Render, or migrate to a hosted
+Postgres and adjust `server/src/db/` accordingly (not done in this build).
+
 ## Status
 
 - **Backend**: Node/Express + SQLite (`better-sqlite3`), JWT auth

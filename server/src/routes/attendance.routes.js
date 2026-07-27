@@ -32,6 +32,39 @@ attendanceRouter.get("/today", (req, res) => {
   res.json({ count });
 });
 
+// GET /api/attendance/today/list — who checked in today, for the Dashboard
+// "Today's Attendance" detail widget.
+attendanceRouter.get("/today/list", (req, res) => {
+  res.json(
+    db
+      .prepare(
+        `SELECT a.id, a.checked_in_at, a.source, m.full_name AS member_name, m.member_code
+         FROM attendance a
+         JOIN members m ON m.id = a.member_id
+         WHERE a.outlet_id = ? AND date(a.checked_in_at) = date('now')
+         ORDER BY a.checked_in_at DESC`
+      )
+      .all(req.user.outletId)
+  );
+});
+
+// GET /api/attendance/peak-hours — check-in count by hour-of-day over the
+// last 30 days, for the Dashboard's peak-hours bar chart.
+attendanceRouter.get("/peak-hours", (req, res) => {
+  const rows = db
+    .prepare(
+      `SELECT CAST(strftime('%H', checked_in_at) AS INTEGER) AS hour, COUNT(*) AS count
+       FROM attendance
+       WHERE outlet_id = ? AND checked_in_at >= datetime('now', '-30 days')
+       GROUP BY hour`
+    )
+    .all(req.user.outletId);
+
+  const byHour = Object.fromEntries(rows.map((r) => [r.hour, r.count]));
+  const hours = Array.from({ length: 24 }, (_, hour) => ({ hour, count: byHour[hour] ?? 0 }));
+  res.json(hours);
+});
+
 // POST /api/attendance — mobile "Quick Check-in" FAB
 attendanceRouter.post("/", (req, res) => {
   const { member_id: memberId, source = "manual" } = req.body;

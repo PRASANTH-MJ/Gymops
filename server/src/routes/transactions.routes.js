@@ -61,6 +61,32 @@ transactionsRouter.get("/summary", (req, res) => {
   res.json({ ...income, expense, profit: income.income - expense });
 });
 
+// GET /api/transactions/trend?days=7 — daily income totals for the
+// Dashboard's revenue trend chart.
+transactionsRouter.get("/trend", (req, res) => {
+  const days = Math.min(Math.max(Number(req.query.days) || 7, 1), 90);
+
+  const rows = db
+    .prepare(
+      `SELECT date(paid_at) AS date, COALESCE(SUM(amount_collected), 0) AS income
+       FROM transactions
+       WHERE outlet_id = ? AND date(paid_at) >= date('now', ?)
+       GROUP BY date(paid_at)`
+    )
+    .all(req.user.outletId, `-${days - 1} days`);
+
+  const byDate = Object.fromEntries(rows.map((r) => [r.date, r.income]));
+  const series = [];
+  for (let i = days - 1; i >= 0; i--) {
+    const d = new Date();
+    d.setDate(d.getDate() - i);
+    const date = d.toISOString().slice(0, 10);
+    series.push({ date, income: byDate[date] ?? 0 });
+  }
+
+  res.json(series);
+});
+
 // POST /api/transactions — ad-hoc due collection / PT / service / product
 // sale not tied to the Add Member wizard. Reduces the member's due_amount
 // when type = 'due_paid'.

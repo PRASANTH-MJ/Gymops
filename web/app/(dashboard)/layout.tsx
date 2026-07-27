@@ -1,6 +1,7 @@
 import { Sidebar } from "@/components/layout/Sidebar";
 import { Header } from "@/components/layout/Header";
 import { RequireAuth } from "@/components/auth/RequireAuth";
+import { QuickActionFAB } from "@/components/layout/QuickActionFAB";
 
 export default function DashboardLayout({
   children,
@@ -16,6 +17,7 @@ export default function DashboardLayout({
           <main className="flex-1 overflow-y-auto p-6">{children}</main>
         </div>
       </div>
+      <QuickActionFAB />
     </RequireAuth>
   );
 }

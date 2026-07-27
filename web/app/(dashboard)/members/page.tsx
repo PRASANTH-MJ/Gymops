@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { MemberActionBar } from "@/components/members/MemberActionBar";
 import { MemberFilters, type MemberFilterState } from "@/components/members/MemberFilters";
 import { MemberTable } from "@/components/members/MemberTable";
@@ -35,6 +36,8 @@ const PRESETS: Array<{ key: Exclude<Preset, null>; label: string }> = [
 ];
 
 export default function MembersPage() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
   const [view, setView] = useState<"table" | "grid">("table");
   const [searchField, setSearchField] = useState<"name" | "id" | "phone">("name");
   const [searchQuery, setSearchQuery] = useState("");
@@ -103,6 +106,13 @@ export default function MembersPage() {
     const timeout = setTimeout(loadMembers, 250);
     return () => clearTimeout(timeout);
   }, [loadMembers]);
+
+  useEffect(() => {
+    if (searchParams.get("action") === "add") {
+      setShowAddModal(true);
+      router.replace("/members");
+    }
+  }, [searchParams, router]);
 
   const displayedMembers = useMemo(() => {
     if (!preset) return members;

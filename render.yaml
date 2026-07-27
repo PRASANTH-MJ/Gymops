@@ -1,0 +1,19 @@
+services:
+  - type: web
+    name: gymflow-api
+    env: node
+    plan: free
+    rootDir: server
+    buildCommand: npm install
+    startCommand: npm start
+    envVars:
+      - key: PORT
+        value: 4000
+      - key: DB_PATH
+        value: ./data/gymflow.db
+      - key: JWT_SECRET
+        generateValue: true
+      - key: JWT_EXPIRES_IN
+        value: 7d
+      - key: CORS_ORIGIN
+        value: https://your-site.netlify.app

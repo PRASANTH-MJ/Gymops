@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from "react";
 import { View, Text, ScrollView, Pressable, RefreshControl } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { api } from "@/lib/api";
+import { TransactionAmount } from "@/components/TransactionAmount";
 
 interface Summary {
   income: number;
@@ -133,7 +134,7 @@ export default function FinanceScreen() {
                       {t.type.replace("_", " ")} · {t.method}
                     </Text>
                   </View>
-                  <Text className="font-semibold text-success">+₹{t.amount_collected}</Text>
+                  <TransactionAmount amount={t.amount_collected} />
                 </View>
               ))
             ))}

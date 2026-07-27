@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { X } from "lucide-react";
 import { api } from "@/lib/api";
+import { toTitleCase, validateMemberName } from "@/lib/validation";
 import type { Plan } from "@/types/database";
 
 interface AddMemberModalProps {
@@ -34,12 +35,19 @@ export function AddMemberModal({ plans, onClose, onCreated }: AddMemberModalProp
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    setSubmitting(true);
     setError(null);
+
+    const nameCheck = validateMemberName(fullName);
+    if (!nameCheck.valid) {
+      setError(nameCheck.error ?? "Invalid name");
+      return;
+    }
+
+    setSubmitting(true);
     try {
       await api.createMember({
         member_code: memberCode,
-        full_name: fullName,
+        full_name: toTitleCase(fullName),
         phone,
         gender,
         batch,

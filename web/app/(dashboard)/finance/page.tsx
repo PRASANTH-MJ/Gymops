@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { api } from "@/lib/api";
 import { formatCurrency, whatsappLink } from "@/lib/utils";
+import { TransactionAmount } from "@/components/ui/TransactionAmount";
 import type { Transaction, TransactionType } from "@/types/database";
 
 interface Summary {
@@ -127,8 +128,8 @@ export default function FinancePage() {
                   <td className="px-4 py-3 text-muted-foreground">
                     {new Date(t.paid_at).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" })}
                   </td>
-                  <td className="px-4 py-3 text-right font-semibold text-success">
-                    +{formatCurrency(t.amount_collected)}
+                  <td className="px-4 py-3 text-right">
+                    <TransactionAmount amount={t.amount_collected} />
                   </td>
                   <td className="px-4 py-3 text-right">
                     <a

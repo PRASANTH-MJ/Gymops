@@ -2,6 +2,7 @@ import { Router } from "express";
 import { db } from "../db/index.js";
 import { requireAuth } from "../middleware/auth.js";
 import { newId } from "../utils/ids.js";
+import { toTitleCase, validateMemberName } from "../utils/validation.js";
 
 export const membersRouter = Router();
 membersRouter.use(requireAuth);
@@ -91,6 +92,12 @@ membersRouter.post("/", (req, res) => {
     return res.status(400).json({ error: "Missing required fields" });
   }
 
+  const nameCheck = validateMemberName(full_name);
+  if (!nameCheck.valid) {
+    return res.status(400).json({ error: nameCheck.error });
+  }
+  const formattedName = toTitleCase(full_name);
+
   const plan = planId
     ? db.prepare("SELECT * FROM plans WHERE id = ? AND outlet_id = ?").get(planId, req.user.outletId)
     : null;
@@ -116,7 +123,7 @@ membersRouter.post("/", (req, res) => {
       memberId,
       req.user.outletId,
       member_code,
-      full_name,
+      formattedName,
       phone,
       email ?? null,
       gender ?? null,
@@ -163,6 +170,12 @@ membersRouter.patch("/:id", (req, res) => {
     .prepare("SELECT * FROM members WHERE id = ? AND outlet_id = ?")
     .get(req.params.id, req.user.outletId);
   if (!existing) return res.status(404).json({ error: "Member not found" });
+
+  if ("full_name" in req.body) {
+    const nameCheck = validateMemberName(req.body.full_name);
+    if (!nameCheck.valid) return res.status(400).json({ error: nameCheck.error });
+    req.body.full_name = toTitleCase(req.body.full_name);
+  }
 
   const fields = [
     "full_name", "phone", "email", "gender", "batch", "plan_id",

@@ -108,8 +108,11 @@ export const api = {
     request("/api/transactions", { method: "POST", body: JSON.stringify(payload) }),
   getInvoice: (transactionId: string) => request(`/api/transactions/${transactionId}/invoice`),
   getPublicInvoice: (transactionId: string) => request(`/api/public/invoices/${transactionId}`),
+  getTransactionTrend: (days = 7) => request(`/api/transactions/trend?days=${days}`),
 
   getAttendanceToday: () => request<{ count: number }>("/api/attendance/today"),
+  getAttendanceTodayList: () => request("/api/attendance/today/list"),
+  getPeakHours: () => request("/api/attendance/peak-hours"),
   getAttendance: (memberId: string) => request(`/api/attendance?member_id=${memberId}`),
   checkIn: (memberId: string, source = "manual") =>
     request("/api/attendance", { method: "POST", body: JSON.stringify({ member_id: memberId, source }) }),
